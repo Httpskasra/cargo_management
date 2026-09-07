@@ -1,0 +1,52 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum RunsheetType {
+  NDX
+  SAPAPOST
+}
+
+enum ItemStatus {
+  NORMAL
+  RETURNED
+}
+
+model Rider {
+  id        Int        @id @default(autoincrement())
+  name      String
+  phone     String?
+  active    Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  runsheets Runsheet[]
+}
+
+model Runsheet {
+  id        Int           @id @default(autoincrement())
+  riderId   Int
+  type      RunsheetType
+  createdAt DateTime      @default(now())
+  rider     Rider         @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  items     RunsheetItem[]
+
+  @@index([riderId, type])
+}
+
+model RunsheetItem {
+  id           Int        @id @default(autoincrement())
+  runsheetId   Int
+  barcode      String     @unique
+  status       ItemStatus @default(NORMAL)
+  registeredAt DateTime   @default(now())
+  returnedAt   DateTime?
+  runsheet     Runsheet   @relation(fields: [runsheetId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([registeredAt])
+}

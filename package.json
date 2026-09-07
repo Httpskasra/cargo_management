@@ -1,0 +1,63 @@
+{
+  "name": "cargo-manager",
+  "version": "1.1.0",
+  "private": true,
+  "main": "electron/main.cjs",
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0 -p 3090",
+    "build": "prisma generate && prisma db push && next build",
+    "start": "next start -H 0.0.0.0 -p 3090",
+    "electron:dev": "concurrently \"next dev -H 0.0.0.0 -p 3090\" \"wait-on http://localhost:3090 && electron electron/dev.cjs\"",
+    "electron:build": "npm run build && electron-builder",
+    "db:push": "prisma db push",
+    "db:seed": "node prisma/seed.cjs",
+    "dev:host": "next dev -H 0.0.0.0 -p 3090"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.542.0",
+    "next": "^15.5.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.3.0",
+    "@types/react": "^19.1.12",
+    "@types/react-dom": "^19.1.9",
+    "concurrently": "^9.2.1",
+    "electron": "^37.4.0",
+    "electron-builder": "^26.0.12",
+    "prisma": "^6.15.0",
+    "typescript": "^5.9.2",
+    "wait-on": "^8.0.4"
+  },
+  "build": {
+    "appId": "com.cargomanager.desktop",
+    "productName": "Cargo Manager",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      ".next/**/*",
+      "public/**/*",
+      "electron/**/*",
+      "prisma/**/*",
+      "node_modules/**/*",
+      "package.json",
+      "next.config.mjs"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "asarUnpack": [
+      "node_modules/.prisma/**/*",
+      "node_modules/@prisma/**/*",
+      "prisma/**/*"
+    ]
+  }
+}
