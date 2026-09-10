@@ -2,13 +2,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
-import { LayoutDashboard, Bike, ClipboardList, Search, DatabaseBackup, Wifi, WifiOff, Copy, Check, PackageCheck } from 'lucide-react'
+import { LayoutDashboard, Bike, ClipboardList, Search, DatabaseBackup, Wifi, WifiOff, Copy, Check, PackageCheck, BarChart3 } from 'lucide-react'
 
 const links = [
   { href:'/', label:'داشبورد', hint:'ثبت سریع و آمار امروز', Icon:LayoutDashboard },
   { href:'/riders', label:'راکب‌ها', hint:'مدیریت افراد', Icon:Bike },
   { href:'/runsheets', label:'رانشیت‌ها', hint:'NDX و SAPA Post', Icon:ClipboardList },
   { href:'/search', label:'جستجو', hint:'پیدا کردن مرسوله', Icon:Search },
+  { href:'/analytics', label:'آمار و گزارش', hint:'نمودار و خروجی اکسل', Icon:BarChart3 },
   { href:'/backup', label:'پشتیبان‌گیری', hint:'امنیت اطلاعات', Icon:DatabaseBackup },
 ]
 

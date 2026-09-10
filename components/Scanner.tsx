@@ -53,67 +53,37 @@ export default function Scanner({runsheetId,onScanned}:{runsheetId:number|null,o
    }
  }
 
- return(
-   <div className="card scan-card section">
-      <div className="row" style={{ justifyContent: 'space-between', marginBottom: 14 }}>
-        <div>
-          <div
-            className="eyebrow"
-            style={{ background: '#312e81', color: '#c7d2fe', borderColor: '#4338ca' }}
-          >
-            <ScanLine size={13} /> حالت اسکن سریع
-          </div>
-          <h3 style={{ margin: '0 0 5px' }}>بارکد را اسکن کنید</h3>
-          <div className="muted">
-            <Keyboard size={13} style={{ verticalAlign: 'middle' }} /> اسکن اول: درحال ارسال —
-            اسکن مجدد: تغییر وضعیت
-          </div>
-        </div>
-        <ScanLine size={36} color="#818cf8" />
-      </div>
+ return <div className="card scan-card section">
+   <div className="row" style={{justifyContent:'space-between',marginBottom:14}}>
+     <div>
+       <div className="eyebrow" style={{background:'#312e81',color:'#c7d2fe',borderColor:'#4338ca'}}>
+         <ScanLine size={13}/> حالت اسکن سریع
+       </div>
+       <h3 style={{margin:'0 0 5px'}}>بارکد را اسکن کنید</h3>
+       <div className="muted"><Keyboard size={13} style={{verticalAlign:'middle'}}/> اسکن اول: درحال ارسال — اسکن مجدد: تغییر وضعیت</div>
+     </div>
+     <ScanLine size={36} color="#818cf8"/>
+   </div>
 
-      <form onSubmit={submit}>
-        <div className="row responsive">
-          <input
-            ref={ref}
-            className="input scanner-input"
-            style={{ flex: 1, minWidth: 220 }}
-            value={barcode}
-            onChange={(e) => setBarcode(e.target.value)}
-            placeholder="SCAN BARCODE..."
-            autoComplete="off"
-          />
-          <button className="btn big" disabled={busy}>
-            {busy ? 'در حال ثبت...' : 'ثبت / تغییر وضعیت'}
-          </button>
-        </div>
-      </form>
+   <form onSubmit={submit}>
+     <div className="row responsive">
+       <input ref={ref} className="input scanner-input" style={{flex:1,minWidth:220}} value={barcode}
+         onChange={e=>setBarcode(e.target.value)} placeholder="SCAN BARCODE..." autoComplete="off"/>
+       <button className="btn big" disabled={busy}>
+         {busy?'در حال ثبت...':'ثبت / تغییر وضعیت'}
+       </button>
+     </div>
+   </form>
 
-      <div className="scan-legend">
-        <span>
-          <i className="status-dot transit" />
-          درحال ارسال
-        </span>
-        <span>
-          <i className="status-dot delivered" />
-          تحویل
-        </span>
-        <span>
-          <i className="status-dot returned" />
-          برگشتی
-        </span>
-      </div>
+   <div className="scan-legend">
+     <span><i className="status-dot transit"/>درحال ارسال</span>
+     <span><i className="status-dot delivered"/>تحویل</span>
+     <span><i className="status-dot returned"/>برگشتی</span>
+   </div>
 
-      {msg && (
-        <div className={`scan-status ${msg.err ? 'error' : 'success'}`}>
-          {msg.err ? (
-            <AlertTriangle size={16} style={{ verticalAlign: 'middle', marginLeft: 6 }} />
-          ) : (
-            <CheckCircle2 size={16} style={{ verticalAlign: 'middle', marginLeft: 6 }} />
-          )}
-          {msg.text}
-        </div>
-      )}
-    </div>
-  );
+   {msg&&<div className={`scan-status ${msg.err?'error':'success'}`}>
+     {msg.err?<AlertTriangle size={16} style={{verticalAlign:'middle',marginLeft:6}}/>:<CheckCircle2 size={16} style={{verticalAlign:'middle',marginLeft:6}}/>}
+     {msg.text}
+   </div>}
+ </div>
 }
