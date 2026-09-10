@@ -13,8 +13,10 @@ enum RunsheetType {
 }
 
 enum ItemStatus {
-  NORMAL
+  IN_TRANSIT
+  DELIVERED
   RETURNED
+  NORMAL
 }
 
 model Rider {
@@ -42,8 +44,9 @@ model RunsheetItem {
   id           Int        @id @default(autoincrement())
   runsheetId   Int
   barcode      String     @unique
-  status       ItemStatus @default(NORMAL)
+  status       ItemStatus @default(IN_TRANSIT)
   registeredAt DateTime   @default(now())
+  deliveredAt  DateTime?
   returnedAt   DateTime?
   runsheet     Runsheet   @relation(fields: [runsheetId], references: [id], onDelete: Cascade)
 

@@ -12,8 +12,9 @@ export default function Dashboard(){
  const stats=[
   {label:'مرسوله امروز',value:s.today??0,Icon:PackageCheck,cls:''},
   {label:'برگشتی امروز',value:s.totalReturned??0,Icon:RotateCcw,cls:'red'},
-  {label:'عادی امروز',value:s.normal??0,Icon:Activity,cls:'green'},
-  {label:'راکب فعال',value:s.activeRiders??0,Icon:Bike,cls:'cyan'}
+  {label:'درحال ارسال',value:s.inTransit??0,Icon:Activity,cls:'green'},
+  {label:'تحویل امروز',value:s.delivered??0,Icon:PackageCheck,cls:'cyan'},
+  {label:'راکب فعال',value:s.activeRiders??0,Icon:Bike,cls:''}
  ]
  return <>
   <div className="top"><div><div className="eyebrow"><Activity size={13}/> مرکز عملیات امروز</div><h1>داشبورد</h1><div className="muted">همه‌چیز برای ثبت سریع مرسوله در یک صفحه.</div></div><Link href="/runsheets" className="btn secondary"><ClipboardList size={17}/> مدیریت رانشیت‌ها</Link></div>

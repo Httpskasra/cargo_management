@@ -1,6 +1,6 @@
 @echo off
 
-cd /d "E:\programming\post\cargo-manager"
+cd /d "D:\cargoManager\cargo_management"
 
 start "React Server" cmd /k "npm run start"
 
