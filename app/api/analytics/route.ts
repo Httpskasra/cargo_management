@@ -1,6 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
-import { RunsheetType } from '@prisma/client'
+import { ItemStatus, RunsheetType } from '@prisma/client'
+
+function parseItemStatus(value: string | null): ItemStatus | undefined {
+  if (!value || value === 'ALL') return undefined
+  return Object.values(ItemStatus).includes(value as ItemStatus) ? (value as ItemStatus) : undefined
+}
+
+function parseRunsheetType(value: string | null): RunsheetType | undefined {
+  if (!value || value === 'ALL') return undefined
+  return Object.values(RunsheetType).includes(value as RunsheetType) ? (value as RunsheetType) : undefined
+}
 
 function dateRange(from: string | null, to: string | null) {
   const where: any = {}
@@ -14,15 +24,17 @@ export async function GET(req: NextRequest) {
   const from = p.get('from')
   const to = p.get('to')
   const rider = p.get('rider')
-  const type = p.get('type')
-  const status = p.get('status')
+  const typeParam = p.get('type')
+  const statusParam = p.get('status')
+  const type = parseRunsheetType(typeParam)
+  const status = parseItemStatus(statusParam)
   const registeredAt = dateRange(from, to)
 
   const where: any = {
     registeredAt,
-    status: status && status !== 'ALL' ? status : undefined,
+    status,
     runsheet: {
-      type: type && type !== 'ALL' ? type : undefined,
+      type,
       rider: rider ? { name: { contains: rider } } : undefined,
     },
   }
@@ -71,12 +83,12 @@ export async function GET(req: NextRequest) {
 
   const runsheets = await prisma.runsheet.count({ where: {
     createdAt: registeredAt,
-    type: type && type !== 'ALL' ? (type as RunsheetType) : undefined,
+    type,
     rider: rider ? { name: { contains: rider } } : undefined,
   } })
 
   return NextResponse.json({
-    filters: { from, to, rider: rider || '', type: type || 'ALL', status: status || 'ALL' },
+    filters: { from, to, rider: rider || '', type: typeParam || 'ALL', status: statusParam || 'ALL' },
     totals: { total, delivered, returned, inTransit, runsheets, deliveryRate: total ? Math.round((delivered / total) * 1000) / 10 : 0 },
     status: [
       { key: 'IN_TRANSIT', label: 'درحال ارسال', value: inTransit },

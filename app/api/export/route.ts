@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
+import { ItemStatus, RunsheetType } from '@prisma/client'
 
 function esc(v: unknown) {
   return String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
@@ -10,6 +11,16 @@ function dateRange(from: string | null, to: string | null) {
   if (to) x.lte = new Date(`${to}T23:59:59.999`)
   return Object.keys(x).length ? x : undefined
 }
+function parseItemStatus(value: string | null): ItemStatus | undefined {
+  if (!value || value === 'ALL') return undefined
+  return Object.values(ItemStatus).includes(value as ItemStatus) ? (value as ItemStatus) : undefined
+}
+
+function parseRunsheetType(value: string | null): RunsheetType | undefined {
+  if (!value || value === 'ALL') return undefined
+  return Object.values(RunsheetType).includes(value as RunsheetType) ? (value as RunsheetType) : undefined
+}
+
 function statusLabel(s: string) {
   if (s === 'DELIVERED') return 'تحویل'
   if (s === 'RETURNED') return 'برگشتی'
@@ -20,8 +31,8 @@ export async function GET(req: NextRequest) {
   const p = req.nextUrl.searchParams
   const barcode = p.get('barcode') || undefined
   const rider = p.get('rider') || undefined
-  const type = p.get('type') || undefined
-  const status = p.get('status') || undefined
+  const type = parseRunsheetType(p.get('type'))
+  const status = parseItemStatus(p.get('status'))
   const from = p.get('from')
   const to = p.get('to')
   const registeredAt = dateRange(from, to)
@@ -29,10 +40,10 @@ export async function GET(req: NextRequest) {
   const rows = await prisma.runsheetItem.findMany({
     where: {
       barcode: barcode ? { contains: barcode } : undefined,
-      status: status && status !== 'ALL' ? status : undefined,
+      status,
       registeredAt,
       runsheet: {
-        type: type && type !== 'ALL' ? type : undefined,
+        type,
         rider: rider ? { name: { contains: rider } } : undefined,
       },
     },

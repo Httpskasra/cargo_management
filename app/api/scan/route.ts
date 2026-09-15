@@ -24,13 +24,56 @@ function statusData(status: Status) {
   }
 }
 
+function cleanBarcodes(input: unknown): string[] {
+  if (!Array.isArray(input)) return []
+  return [...new Set(input.map(x => String(x || '').trim()).filter(Boolean))]
+}
+
 export async function POST(req: NextRequest) {
   const b = await req.json()
-  const barcode = String(b.barcode || '').trim()
   const runsheetId = Number(b.runsheetId)
 
-  if (!barcode || !runsheetId) {
-    return NextResponse.json({ error: 'بارکد و رانشیت الزامی است' }, { status: 400 })
+  if (!runsheetId) {
+    return NextResponse.json({ error: 'رانشیت الزامی است' }, { status: 400 })
+  }
+
+  // ثبت گروهی بارکدها؛ مناسب Paste مستقیم از Excel.
+  if (Array.isArray(b.barcodes)) {
+    const barcodes = cleanBarcodes(b.barcodes)
+    if (!barcodes.length) {
+      return NextResponse.json({ error: 'حداقل یک بارکد معتبر وارد کنید' }, { status: 400 })
+    }
+
+    const existing = await prisma.runsheetItem.findMany({
+      where: { barcode: { in: barcodes } },
+      select: { barcode: true, runsheetId: true },
+    })
+    const existingMap = new Map(existing.map(x => [x.barcode, x.runsheetId]))
+    const newBarcodes = barcodes.filter(x => !existingMap.has(x))
+    const alreadyHere = barcodes.filter(x => existingMap.get(x) === runsheetId)
+    const conflicts = barcodes
+      .filter(x => existingMap.has(x) && existingMap.get(x) !== runsheetId)
+      .map(barcode => ({ barcode, runsheetId: existingMap.get(barcode) }))
+
+    if (newBarcodes.length) {
+      await prisma.runsheetItem.createMany({
+        data: newBarcodes.map(barcode => ({ runsheetId, barcode, status: 'IN_TRANSIT' as const })),
+      })
+      broadcast('items.created', { runsheetId, count: newBarcodes.length })
+    }
+
+    return NextResponse.json({
+      ok: true,
+      received: barcodes.length,
+      created: newBarcodes.length,
+      alreadyHere: alreadyHere.length,
+      conflicts,
+    }, { status: newBarcodes.length ? 201 : 200 })
+  }
+
+  const barcode = String(b.barcode || '').trim()
+  if (!barcode) {
+    return NextResponse.json({ error: 'بارکد الزامی است' }, { status: 400 })
   }
 
   // اسکن اول: ایجاد مرسوله با وضعیت «درحال ارسال».
@@ -64,11 +107,7 @@ export async function POST(req: NextRequest) {
   }
 
   const item = await prisma.runsheetItem.create({
-    data: {
-      runsheetId,
-      barcode,
-      status: 'IN_TRANSIT',
-    },
+    data: { runsheetId, barcode, status: 'IN_TRANSIT' },
     include: { runsheet: { include: { rider: true } } },
   })
 
@@ -91,10 +130,6 @@ export async function PATCH(req: NextRequest) {
   }
 
   const status = normalizeStatus(String(b.status || ''))
-  if (status === 'IN_TRANSIT') {
-    return NextResponse.json({ error: 'برای تغییر دستی فقط «تحویل» یا «برگشتی» قابل انتخاب است' }, { status: 400 })
-  }
-
   const result = await prisma.runsheetItem.updateMany({
     where: { id: { in: ids } },
     data: statusData(status),
@@ -102,4 +137,24 @@ export async function PATCH(req: NextRequest) {
 
   ids.forEach(id => broadcast('item.updated', { id }))
   return NextResponse.json({ count: result.count, status })
+}
+
+export async function DELETE(req: NextRequest) {
+  const b = await req.json()
+  const ids: number[] = Array.isArray(b.ids)
+    ? b.ids.map(Number).filter(Boolean)
+    : [Number(b.id)].filter(Boolean)
+
+  if (!ids.length) {
+    return NextResponse.json({ error: 'حداقل یک مرسوله را انتخاب کنید' }, { status: 400 })
+  }
+
+  const items = await prisma.runsheetItem.findMany({
+    where: { id: { in: ids } },
+    select: { id: true, runsheetId: true },
+  })
+  const result = await prisma.runsheetItem.deleteMany({ where: { id: { in: ids } } })
+  items.forEach(item => broadcast('item.deleted', item))
+
+  return NextResponse.json({ count: result.count })
 }
