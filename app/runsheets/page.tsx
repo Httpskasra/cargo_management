@@ -1,6 +1,7 @@
 'use client'
 import {useEffect,useMemo,useState} from 'react'
 import Scanner from '@/components/Scanner'
+import PersianDateTimePicker from '@/components/PersianDateTimePicker'
 import {faDate,faTime} from '@/lib/format'
 import {useRealtime} from '@/hooks/useRealtime'
 import {ClipboardList, Plus, Package, RotateCcw, CheckCircle2, Clock3, UserRound, CalendarClock, CheckSquare, Trash2, ClipboardPaste, Send, RefreshCw, MessageSquareText} from 'lucide-react'
@@ -29,7 +30,11 @@ export default function Runsheets(){
  const [riders,setRiders]=useState<any[]>([])
  const [runs,setRuns]=useState<any[]>([])
  const [riderId,setRiderId]=useState('')
+ const [riderSearch,setRiderSearch]=useState('')
+ const [runsheetSearch,setRunsheetSearch]=useState('')
+ const [addStatus,setAddStatus]=useState<'IN_TRANSIT'|'DELIVERED'|'RETURNED'>('IN_TRANSIT')
  const [type,setType]=useState('NDX')
+ const [createdAt,setCreatedAt]=useState(()=>new Date().toISOString())
  const [selected,setSelected]=useState<any>(null)
  const [creating,setCreating]=useState(false)
  const [selectedItems,setSelectedItems]=useState<number[]>([])
@@ -44,10 +49,10 @@ export default function Runsheets(){
  const [nedexError,setNedexError]=useState('')
  const parsedBarcodes=useMemo(()=>parseBarcodes(pasteText),[pasteText])
 
- async function load(){
+ async function load(q=runsheetSearch){
    const [a,b]=await Promise.all([
      fetch('/api/riders',{cache:'no-store'}),
-     fetch('/api/runsheets',{cache:'no-store'})
+     fetch('/api/runsheets'+(q.trim()?`?q=${encodeURIComponent(q.trim())}`:''),{cache:'no-store'})
    ])
    setRiders(await a.json())
    const x=await b.json()
@@ -71,7 +76,7 @@ export default function Runsheets(){
    setCreating(true)
    try{
      const r=await fetch('/api/runsheets',{
-       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({riderId,type})
+       method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({riderId,type,createdAt})
      })
      const d=await r.json()
      setSelected(d)
@@ -146,7 +151,7 @@ export default function Runsheets(){
    try{
      const r=await fetch('/api/scan',{
        method:'POST',headers:{'Content-Type':'application/json'},
-       body:JSON.stringify({runsheetId:selected.id,barcodes:parsedBarcodes})
+       body:JSON.stringify({runsheetId:selected.id,barcodes:parsedBarcodes,status:addStatus})
      })
      const d=await r.json()
      if(!r.ok){setImportMsg({err:true,text:d.error||'خطا در ثبت گروهی'});return}
@@ -161,15 +166,16 @@ export default function Runsheets(){
  return <>
    <div className="top"><div><div className="eyebrow"><ClipboardList size={13}/> مرکز رانشیت</div><h1>رانشیت‌ها</h1><div className="muted">ساخت رانشیت، ثبت گروهی بارکد و مدیریت وضعیت مرسوله‌ها.</div></div></div>
 
-   <div className="card"><div className="row responsive">
-     <select className="select" style={{flex:2}} value={riderId} onChange={e=>setRiderId(e.target.value)}><option value="">۱) راکب را انتخاب کنید</option>{riders.filter(r=>r.active).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select>
+   <div className="card runsheet-create-card"><div className="row responsive">
+     <div style={{flex:1,minWidth:240}}><label className="muted" style={{display:'block',marginBottom:6}}>۱) جستجوی راکب</label><input className="input" value={riderSearch} onChange={e=>setRiderSearch(e.target.value)} placeholder="نام راکب را جستجو کنید..."/><select className="select" style={{marginTop:7,width:'100%'}} value={riderId} onChange={e=>setRiderId(e.target.value)}><option value="">راکب را انتخاب کنید</option>{riders.filter(r=>r.active&&r.name.toLowerCase().includes(riderSearch.trim().toLowerCase())).map(r=><option key={r.id} value={r.id}>{r.name}</option>)}</select></div>
      <select className="select" style={{flex:1}} value={type} onChange={e=>setType(e.target.value)}><option value="NDX">۲) NDX</option><option value="SAPAPOST">۲) SAPA Post</option></select>
-     <button className="btn big" disabled={!riderId||creating} onClick={create}><Plus size={18}/>{creating?'در حال ساخت...':'۳) ساخت رانشیت'}</button>
+     <div style={{flex:1.5,minWidth:260}}><label className="muted" style={{display:'block',marginBottom:6}}>۳) تاریخ و ساعت ثبت رانشیت</label><PersianDateTimePicker value={createdAt} onChange={setCreatedAt}/></div>
+     <button className="btn big" disabled={!riderId||creating} onClick={create}><Plus size={18}/>{creating?'در حال ساخت...':'۴) ساخت رانشیت'}</button>
    </div></div>
 
    <div className="section-grid section">
      <div className="card">
-       <div className="row" style={{justifyContent:'space-between',marginBottom:12}}><h3 style={{margin:0}}>رانشیت‌های اخیر</h3><span className="chip">{runs.length} مورد</span></div>
+       <div className="row" style={{justifyContent:'space-between',marginBottom:12}}><h3 style={{margin:0}}>رانشیت‌ها</h3><span className="chip">{runs.length} مورد</span></div><div className="row responsive" style={{marginBottom:12}}><input className="input" style={{flex:1}} value={runsheetSearch} onChange={e=>{setRunsheetSearch(e.target.value);if(!e.target.value.trim())load('')}} onKeyDown={e=>e.key==='Enter'&&load()} placeholder="جستجو با شماره رانشیت، نام راکب یا نوع..."/><button className="btn secondary" onClick={()=>load()} disabled={!runsheetSearch.trim()}>جستجو</button></div>
        <div className="runs-list">{runs.map(r=><div key={r.id} onClick={()=>setSelected(r)} className={`runs-item ${selected?.id===r.id?'active':''}`}>
          <div className="runs-item-top"><div className="row"><div className="nav-icon"><UserRound size={17}/></div><b>{r.rider.name}</b></div><span className="chip">{r.type}</span></div>
          <div className="muted" style={{margin:'8px 0 5px'}}><Package size={13} style={{verticalAlign:'middle'}}/> {r.items.length} مرسوله — #{r.id}</div>
@@ -187,12 +193,13 @@ export default function Runsheets(){
          {selected.type==='NDX'&&nedexError&&<div className="scan-status error">{nedexError}</div>}
        </div>
 
-       <Scanner runsheetId={selected.id} onScanned={load}/>
+       <Scanner runsheetId={selected.id} onScanned={load} addStatus={addStatus} onAddStatusChange={setAddStatus}/>
 
        <div className="card section bulk-import-card">
          <div className="row" style={{justifyContent:'space-between',alignItems:'flex-start',marginBottom:12}}><div><div className="eyebrow"><ClipboardPaste size={13}/> ورود گروهی از Excel</div><h3 style={{margin:'0 0 5px'}}>چند بارکد را یکجا ثبت کنید</h3><div className="muted">سلول‌ها یا ستون بارکد را در Excel کپی کنید و مستقیم اینجا Paste کنید. سطر، Tab، ویرگول و ; تشخیص داده می‌شود.</div></div><span className="chip">{parsedBarcodes.length} بارکد تشخیص داده شد</span></div>
          <textarea className="input bulk-textarea" value={pasteText} onChange={e=>setPasteText(e.target.value)} placeholder={'مثال:\n123456789\n987654321\n112233445'} />
-         <div className="row responsive" style={{marginTop:10}}><button className="btn big" disabled={!parsedBarcodes.length||importBusy} onClick={importBarcodes}><Send size={17}/>{importBusy?'در حال ثبت...':`ثبت ${parsedBarcodes.length||0} بارکد در این رانشیت`}</button><div className="muted">بارکد تکراری داخل متن فقط یک‌بار پردازش می‌شود.</div></div>
+         <div className="row responsive" style={{marginTop:10}}><select className="select" style={{minWidth:155,flex:1}} value={addStatus} onChange={e=>setAddStatus(e.target.value as any)}><option value="IN_TRANSIT">درحال ارسال</option><option value="DELIVERED">تحویل</option><option value="RETURNED">برگشتی</option></select><button className="btn big" disabled={!parsedBarcodes.length||importBusy} onClick={importBarcodes}><Send size={17}/>{importBusy?'در حال ثبت...':`ثبت ${parsedBarcodes.length||0} بارکد با وضعیت ${statusLabel(addStatus)}`}</button></div>
+         <div className="muted">بارکد جدید با وضعیت انتخاب‌شده ثبت می‌شود؛ بارکد موجود در همین رانشیت نیز همان وضعیت را می‌گیرد.</div>
          {importMsg&&<div className={`scan-status ${importMsg.err?'error':'success'}`}>{importMsg.text}</div>}
        </div>
 
