@@ -5,7 +5,7 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "next dev -H 0.0.0.0 -p 3090",
-    "build": "prisma generate && prisma db push && node prisma/seed.cjs && next build",
+    "build": "prisma generate  && node prisma/seed.cjs && next build",
     "start": "next start -H 0.0.0.0 -p 3090",
     "electron:dev": "concurrently \"next dev -H 0.0.0.0 -p 3090\" \"wait-on http://localhost:3090 && electron electron/dev.cjs\"",
     "electron:build": "npm run build && electron-builder",
