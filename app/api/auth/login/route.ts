@@ -1,0 +1,3 @@
+import {NextRequest,NextResponse} from 'next/server'
+import {loginUser,setSession} from '@/lib/auth'
+export async function POST(req:NextRequest){const b=await req.json().catch(()=>({}));const phone=String(b.phone||'').replace(/\s+/g,'');const password=String(b.password||'');if(!phone||!password)return NextResponse.json({error:'شماره موبایل و رمز عبور الزامی است'},{status:400});const user=await loginUser(phone,password);if(!user)return NextResponse.json({error:'شماره موبایل یا رمز عبور اشتباه است'},{status:401});const res=NextResponse.json({ok:true,user:{phone:user.phone,role:user.role,riderId:user.riderId,name:user.rider?.name||'مدیر سیستم'}});setSession(res,user);return res}

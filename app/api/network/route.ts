@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import os from 'os'
+import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: NextRequest) {
+  if(!await getCurrentUser(req))return NextResponse.json({error:'Unauthorized'},{status:401})
   const interfaces: {name:string,address:string,score:number}[] = []
   const virtualRx = /(wsl|vethernet|virtualbox|vmware|docker|loopback|tailscale|hyper-v|bluetooth)/i
   for (const [name,list] of Object.entries(os.networkInterfaces())) {

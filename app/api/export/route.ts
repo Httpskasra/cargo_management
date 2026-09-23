@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server'
 import { prisma } from '@/lib/db'
+import { requireAuth, forbidden } from '@/lib/auth'
 import { ItemStatus, RunsheetType } from '@prisma/client'
 
 function esc(v: unknown) {
@@ -28,6 +29,7 @@ function statusLabel(s: string) {
 }
 
 export async function GET(req: NextRequest) {
+  const a=await requireAuth(req); if(a.error)return a.error; if(a.user.role!=='ADMIN')return forbidden()
   const p = req.nextUrl.searchParams
   const barcode = p.get('barcode') || undefined
   const rider = p.get('rider') || undefined

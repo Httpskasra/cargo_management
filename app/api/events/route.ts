@@ -1,8 +1,11 @@
+import { NextRequest } from 'next/server'
 import { realtime } from '@/lib/realtime'
+import { getCurrentUser } from '@/lib/auth'
 
 export const dynamic = 'force-dynamic'
 
 export async function GET(req: Request) {
+  const user=await getCurrentUser(req as NextRequest); if(!user)return new Response('Unauthorized',{status:401})
   const encoder = new TextEncoder()
   let cleanup = () => {}
   const stream = new ReadableStream({

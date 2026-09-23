@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { requireAuth, forbidden } from '@/lib/auth'
 
 const ORDER_URL = 'https://nedex.ir/nedexService/appApi/loadUserOrder'
 const COMMENTS_URL = 'https://nedex.ir/nedexService/appApi/loadOrderComments'
@@ -210,6 +211,7 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item
 }
 
 export async function POST(req: NextRequest) {
+  const a=await requireAuth(req); if(a.error)return a.error
   const token = process.env.NEDEX_WS_TOKEN?.trim()
   if (!token) {
     return NextResponse.json({ error: 'توکن NEDEx تنظیم نشده است. مقدار NEDEX_WS_TOKEN را در فایل .env قرار دهید.' }, { status: 500 })
@@ -229,6 +231,7 @@ export async function POST(req: NextRequest) {
   if (!runsheet) {
     return NextResponse.json({ error: 'رانشیت پیدا نشد' }, { status: 404 })
   }
+  if (a.user.role==='RIDER' && runsheet.riderId!==a.user.riderId)return forbidden()
   if (runsheet.type !== 'NDX') {
     return NextResponse.json({ error: 'بروزرسانی NEDEx فقط برای رانشیت‌های NDX فعال است' }, { status: 400 })
   }

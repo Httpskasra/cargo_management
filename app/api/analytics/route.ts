@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/db'
+import { requireAuth, forbidden } from '@/lib/auth'
 import { ItemStatus, RunsheetType } from '@prisma/client'
 
 function parseItemStatus(value: string | null): ItemStatus | undefined {
@@ -20,6 +21,7 @@ function dateRange(from: string | null, to: string | null) {
 }
 
 export async function GET(req: NextRequest) {
+  const a=await requireAuth(req); if(a.error)return a.error; if(a.user.role!=='ADMIN')return forbidden()
   const p = req.nextUrl.searchParams
   const from = p.get('from')
   const to = p.get('to')
