@@ -39,7 +39,7 @@ enum UserRole {
 model Rider {
   id        Int        @id @default(autoincrement())
   name      String
-  phone     String?
+  phone     String
   active    Boolean    @default(true)
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
