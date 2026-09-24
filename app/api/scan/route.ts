@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getPrisma } from '@/lib/db'
 import { broadcast } from '@/lib/realtime'
 import { requireAuth, forbidden } from '@/lib/auth'
 type Status='IN_TRANSIT'|'DELIVERED'|'RETURNED'
@@ -7,6 +7,7 @@ function normalizeStatus(s:string):Status{return s==='RETURNED'?'RETURNED':s==='
 function statusData(status:Status){return {status,deliveredAt:status==='DELIVERED'?new Date():null,returnedAt:status==='RETURNED'?new Date():null}}
 function cleanBarcodes(input:unknown){if(!Array.isArray(input))return [];return [...new Set(input.map(x=>String(x||'').trim()).filter(Boolean))]}
 export async function POST(req:NextRequest){
+ const prisma=getPrisma()
  const a=await requireAuth(req); if(a.error)return a.error
  const b=await req.json(),runsheetId=Number(b.runsheetId),selectedStatus=normalizeStatus(String(b.status||'IN_TRANSIT'))
  if(!runsheetId)return NextResponse.json({error:'رانشیت الزامی است'},{status:400})
@@ -42,11 +43,13 @@ const item = await prisma.runsheetItem.create({
 });broadcast('item.created',{id:item.id,runsheetId});return NextResponse.json({...item,action:'created',message:'مرسوله ثبت شد'},{status:201})
 }
 export async function PATCH(req:NextRequest){
+ const prisma=getPrisma()
  const a=await requireAuth(req); if(a.error)return a.error
  const b=await req.json(),ids:number[]=Array.isArray(b.ids)?b.ids.map(Number).filter(Boolean):[Number(b.id)].filter(Boolean);if(!ids.length)return NextResponse.json({error:'حداقل یک مرسوله را انتخاب کنید'},{status:400})
  const owned=await prisma.runsheetItem.findMany({where:{id:{in:ids}},select:{id:true,runsheet:{select:{riderId:true}}}}); if(a.user.role==='RIDER' && owned.some(x=>x.runsheet.riderId!==a.user.riderId))return forbidden(); const status=normalizeStatus(String(b.status||'')),result=await prisma.runsheetItem.updateMany({where:{id:{in:ids}},data:statusData(status)});ids.forEach(id=>broadcast('item.updated',{id}));return NextResponse.json({count:result.count,status})
 }
 export async function DELETE(req:NextRequest){
+ const prisma=getPrisma()
  const a=await requireAuth(req); if(a.error)return a.error
  const b=await req.json(),ids:number[]=Array.isArray(b.ids)?b.ids.map(Number).filter(Boolean):[Number(b.id)].filter(Boolean);if(!ids.length)return NextResponse.json({error:'حداقل یک مرسوله را انتخاب کنید'},{status:400})
  const items=await prisma.runsheetItem.findMany({where:{id:{in:ids}},select:{id:true,runsheetId:true}});if(a.user.role==='RIDER'){const owned=await prisma.runsheet.findMany({where:{id:{in:items.map(x=>x.runsheetId)},riderId:a.user.riderId!}});const idsOwned=new Set(owned.map(x=>x.id));if(items.some(x=>!idsOwned.has(x.runsheetId)))return forbidden()} const result=await prisma.runsheetItem.deleteMany({where:{id:{in:ids}}});items.forEach(item=>broadcast('item.deleted',item));return NextResponse.json({count:result.count})

@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getPrisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 
 export async function GET(req:NextRequest) {
+ const prisma=getPrisma()
   const a=await requireAuth(req); if(a.error)return a.error
   const start = new Date()
   start.setHours(0,0,0,0)

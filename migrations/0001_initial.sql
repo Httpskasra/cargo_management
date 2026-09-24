@@ -1,0 +1,48 @@
+PRAGMA foreign_keys = ON;
+
+CREATE TABLE IF NOT EXISTS "Rider" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "name" TEXT NOT NULL,
+  "phone" TEXT NOT NULL,
+  "active" BOOLEAN NOT NULL DEFAULT true,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "User" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "phone" TEXT NOT NULL,
+  "passwordHash" TEXT NOT NULL,
+  "role" TEXT NOT NULL DEFAULT 'RIDER',
+  "active" BOOLEAN NOT NULL DEFAULT true,
+  "riderId" INTEGER,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "updatedAt" DATETIME NOT NULL,
+  CONSTRAINT "User_riderId_fkey" FOREIGN KEY ("riderId") REFERENCES "Rider" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "Runsheet" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "riderId" INTEGER NOT NULL,
+  "type" TEXT NOT NULL,
+  "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT "Runsheet_riderId_fkey" FOREIGN KEY ("riderId") REFERENCES "Rider" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS "RunsheetItem" (
+  "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+  "runsheetId" INTEGER NOT NULL,
+  "barcode" TEXT NOT NULL,
+  "status" TEXT NOT NULL DEFAULT 'IN_TRANSIT',
+  "registeredAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  "deliveredAt" DATETIME,
+  "returnedAt" DATETIME,
+  CONSTRAINT "RunsheetItem_runsheetId_fkey" FOREIGN KEY ("runsheetId") REFERENCES "Runsheet" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS "User_phone_key" ON "User"("phone");
+CREATE UNIQUE INDEX IF NOT EXISTS "User_riderId_key" ON "User"("riderId");
+CREATE INDEX IF NOT EXISTS "Runsheet_riderId_type_idx" ON "Runsheet"("riderId", "type");
+CREATE UNIQUE INDEX IF NOT EXISTS "RunsheetItem_barcode_key" ON "RunsheetItem"("barcode");
+CREATE INDEX IF NOT EXISTS "RunsheetItem_status_idx" ON "RunsheetItem"("status");
+CREATE INDEX IF NOT EXISTS "RunsheetItem_registeredAt_idx" ON "RunsheetItem"("registeredAt");

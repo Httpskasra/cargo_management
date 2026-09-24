@@ -1,6 +1,11 @@
 import { PrismaClient } from '@prisma/client'
+import { PrismaD1 } from '@prisma/adapter-d1'
+import { getCloudflareContext } from '@opennextjs/cloudflare'
 
-const globalForPrisma = globalThis as unknown as { prisma?: PrismaClient }
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient()
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
+export function getPrisma() {
+  const { env } = getCloudflareContext()
+  const db = (env as unknown as { DB: any }).DB
+  if (!db) throw new Error('Cloudflare D1 binding DB is not configured')
+  const adapter = new PrismaD1(db)
+  return new PrismaClient({ adapter })
+}

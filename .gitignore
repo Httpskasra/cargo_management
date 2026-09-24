@@ -1,6 +1,14 @@
 node_modules
 .next
+.open-next
+.wrangler
 dist-electron
 backups
 *.log
+.env
 .env.local
+.dev.vars
+cloudflare-env.d.ts
+prisma/*.db
+prisma/*.db-journal
+d1-data.sql

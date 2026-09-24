@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getPrisma } from '@/lib/db'
 import { requireAuth, forbidden } from '@/lib/auth'
 
 const ORDER_URL = 'https://nedex.ir/nedexService/appApi/loadUserOrder'
@@ -211,10 +211,11 @@ async function mapWithConcurrency<T, R>(items: T[], limit: number, worker: (item
 }
 
 export async function POST(req: NextRequest) {
+ const prisma=getPrisma()
   const a=await requireAuth(req); if(a.error)return a.error
   const token = process.env.NEDEX_WS_TOKEN?.trim()
   if (!token) {
-    return NextResponse.json({ error: 'توکن NEDEx تنظیم نشده است. مقدار NEDEX_WS_TOKEN را در فایل .env قرار دهید.' }, { status: 500 })
+    return NextResponse.json({ error: 'توکن NEDEx تنظیم نشده است. secret با نام NEDEX_WS_TOKEN را در Cloudflare تنظیم کنید.' }, { status: 500 })
   }
 
   const body = await req.json().catch(() => ({}))

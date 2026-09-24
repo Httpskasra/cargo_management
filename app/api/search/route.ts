@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { prisma } from '@/lib/db'
+import { getPrisma } from '@/lib/db'
 import { requireAuth } from '@/lib/auth'
 export async function GET(req:NextRequest){
+ const prisma=getPrisma()
   const a=await requireAuth(req); if(a.error)return a.error
   const p=req.nextUrl.searchParams; const barcode=p.get('barcode')||undefined; const rider=p.get('rider')||undefined; const type=p.get('type')||undefined; const status=p.get('status')||undefined
   const from=p.get('from'), to=p.get('to'); const date:any={}; if(from)date.gte=new Date(from); if(to){const d=new Date(to); d.setHours(23,59,59,999); date.lte=d}
