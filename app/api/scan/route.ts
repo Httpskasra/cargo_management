@@ -10,9 +10,9 @@ export async function POST(req:NextRequest){
  if(!runsheetId)return NextResponse.json({error:'رانشیت الزامی است'},{status:400})
  if(Array.isArray(b.barcodes)){
   const barcodes=cleanBarcodes(b.barcodes);if(!barcodes.length)return NextResponse.json({error:'حداقل یک بارکد معتبر وارد کنید'},{status:400})
-  const existing=await prisma.runsheetItem.findMany({where:{barcode:{in:barcodes}},select:{id:true,barcode:true,runsheetId:true}})
+  const existing=await prisma.runsheetItem.findMany({where:{barcode:{in:barcodes}},select:{id:true,barcode:true,runsheetId:true,runsheet:{select:{type:true,rider:{select:{name:true}}}}}})
   const map=new Map(existing.map(x=>[x.barcode,x])),newBarcodes=barcodes.filter(x=>!map.has(x)),alreadyHere=barcodes.filter(x=>map.get(x)?.runsheetId===runsheetId)
-  const conflicts=barcodes.filter(x=>map.has(x)&&map.get(x)?.runsheetId!==runsheetId).map(barcode=>({barcode,runsheetId:map.get(barcode)?.runsheetId}))
+  const conflicts=barcodes.filter(x=>map.has(x)&&map.get(x)?.runsheetId!==runsheetId).map(barcode=>{const item=map.get(barcode);return {barcode,runsheetId:item?.runsheetId,type:item?.runsheet?.type,riderName:item?.runsheet?.rider?.name}})
   if(newBarcodes.length){await prisma.runsheetItem.createMany({data:newBarcodes.map(barcode=>({runsheetId,barcode,...statusData(selectedStatus)}))});broadcast('items.created',{runsheetId,count:newBarcodes.length})}
   const ids=alreadyHere.map(x=>map.get(x)?.id).filter((id):id is number=>Boolean(id))
   if(ids.length){await prisma.runsheetItem.updateMany({where:{id:{in:ids}},data:statusData(selectedStatus)});ids.forEach(id=>broadcast('item.updated',{id,runsheetId}))}
@@ -20,7 +20,7 @@ export async function POST(req:NextRequest){
  }
  const barcode=String(b.barcode||'').trim();if(!barcode)return NextResponse.json({error:'بارکد الزامی است'},{status:400})
  const existing=await prisma.runsheetItem.findUnique({where:{barcode},include:{runsheet:{include:{rider:true}}}})
- if(existing){if(existing.runsheetId!==runsheetId)return NextResponse.json({error:`این بارکد قبلاً در رانشیت #${existing.runsheetId} ثبت شده است`,item:existing},{status:409})
+ if(existing){if(existing.runsheetId!==runsheetId)return NextResponse.json({error:`این بارکد قبلاً در رانشیت #${existing.runsheetId} (${existing.runsheet.type} - ${existing.runsheet.rider.name}) ثبت شده است`,item:existing},{status:409})
   const item=await prisma.runsheetItem.update({where:{id:existing.id},data:statusData(selectedStatus),include:{runsheet:{include:{rider:true}}}});broadcast('item.updated',{id:item.id,runsheetId})
   return NextResponse.json({...item,action:'updated',message:`وضعیت به «${selectedStatus}» تغییر کرد`})}
 const item = await prisma.runsheetItem.create({

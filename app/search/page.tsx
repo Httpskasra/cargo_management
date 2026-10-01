@@ -1,5 +1,5 @@
 'use client'
-import {useState} from 'react'; import {faDate,faTime} from '@/lib/format'; import {useRealtime} from '@/hooks/useRealtime'
+import {useState} from 'react'; import {faDate,faTime} from '@/lib/format'; import {useRealtime} from '@/hooks/useRealtime'; import PersianDateTimePicker from '@/components/PersianDateTimePicker'
 import {Search as SearchIcon, PackageSearch, RotateCcw, CheckCircle2, Clock3, SlidersHorizontal, X, Download, CheckSquare} from 'lucide-react'
 type Status='IN_TRANSIT'|'DELIVERED'|'RETURNED'
 const statusLabel=(s:string)=>s==='DELIVERED'?'تحویل':s==='RETURNED'?'برگشتی':'درحال ارسال'
@@ -17,8 +17,8 @@ export default function Search(){
  <div><label className="muted">نام راکب</label><input className="input" style={{marginTop:6}} placeholder="نام کامل یا بخشی از نام" value={f.rider} onChange={e=>setF({...f,rider:e.target.value})} onKeyDown={e=>e.key==='Enter'&&run()}/></div>
  <div><label className="muted">نوع رانشیت</label><select className="select" style={{marginTop:6}} value={f.type} onChange={e=>setF({...f,type:e.target.value})}><option value="ALL">همه نوع‌ها</option><option value="NDX">NDX</option><option value="SAPAPOST">SAPA Post</option></select></div>
  <div><label className="muted">وضعیت</label><select className="select" style={{marginTop:6}} value={f.status} onChange={e=>setF({...f,status:e.target.value})}><option value="ALL">همه وضعیت‌ها</option><option value="IN_TRANSIT">درحال ارسال</option><option value="DELIVERED">تحویل</option><option value="RETURNED">برگشتی</option></select></div>
- <div><label className="muted">از تاریخ</label><input className="input" style={{marginTop:6}} type="date" value={f.from} onChange={e=>setF({...f,from:e.target.value})}/></div>
- <div><label className="muted">تا تاریخ</label><input className="input" style={{marginTop:6}} type="date" value={f.to} onChange={e=>setF({...f,to:e.target.value})}/></div></div>
+ <div><label className="muted">از تاریخ</label><div style={{marginTop:6}}><PersianDateTimePicker value={f.from} onChange={value=>setF({...f,from:value})} dateOnly allowClear placeholder="انتخاب تاریخ شروع"/></div></div>
+ <div><label className="muted">تا تاریخ</label><div style={{marginTop:6}}><PersianDateTimePicker value={f.to} onChange={value=>setF({...f,to:value})} dateOnly allowClear placeholder="انتخاب تاریخ پایان"/></div></div></div>
  <div className="row" style={{marginTop:14,flexWrap:'wrap'}}><button className="btn big" style={{minWidth:160}} onClick={run} disabled={busy}><SearchIcon size={18}/>{busy?'در حال جستجو...':'جستجو'}</button>{searched&&<a className="btn secondary big" href={'/api/export?'+new URLSearchParams(f).toString()}><Download size={17}/> خروجی اکسل همین جستجو</a>}</div></div>
  <div className="card section">{searched&&<div className="search-result-count">{rows.length} نتیجه پیدا شد</div>}
  {searched&&rows.length>0&&<div className="bulk-bar"><label className="select-all"><input type="checkbox" checked={selectedIds.length===rows.length} onChange={toggleAll}/>{selectedIds.length?`${selectedIds.length} مورد انتخاب شده`:'انتخاب همه'}</label><select className="select bulk-select" value={bulkStatus} onChange={e=>setBulkStatus(e.target.value as Status)}><option value="IN_TRANSIT">درحال ارسال</option><option value="DELIVERED">تحویل</option><option value="RETURNED">برگشتی</option></select><button className="btn big" disabled={!selectedIds.length||statusBusy} onClick={()=>changeStatus(selectedIds,bulkStatus)}><CheckSquare size={17}/>{statusBusy?'در حال اعمال...':`تغییر انتخاب‌شده‌ها به ${statusLabel(bulkStatus)}`}</button></div>}

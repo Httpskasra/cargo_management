@@ -2,7 +2,7 @@
 import {useEffect, useMemo, useState} from 'react'
 import {CalendarDays, ChevronLeft, ChevronRight, Clock3} from 'lucide-react'
 
-type Props = { value:string; onChange:(value:string)=>void }
+type Props = { value:string; onChange:(value:string)=>void; dateOnly?:boolean; allowClear?:boolean; placeholder?:string }
 
 const PERSIAN_WEEKDAYS=['ش','ی','د','س','چ','پ','ج']
 const monthNames=['فروردین','اردیبهشت','خرداد','تیر','مرداد','شهریور','مهر','آبان','آذر','دی','بهمن','اسفند']
@@ -108,7 +108,7 @@ function pad(n:number){return String(n).padStart(2,'0')}
 function toPersianDigits(s:string){return s.replace(/\d/g,d=>'۰۱۲۳۴۵۶۷۸۹'[+d])}
 
 // ============ کامپوننت ============
-export default function PersianDateTimePicker({value,onChange}:Props){
+export default function PersianDateTimePicker({value,onChange,dateOnly=false,allowClear=false,placeholder='انتخاب تاریخ'}:Props){
   const initial=useMemo(()=>{
     const d=value?new Date(value):new Date()
     return toJalali(d)
@@ -136,7 +136,7 @@ export default function PersianDateTimePicker({value,onChange}:Props){
   function selectDay(day:number){
     setJy(viewY);setJm(viewM);setJd(day)
     const g=toGregorian(viewY,viewM,day)
-    const d=new Date(g.getFullYear(),g.getMonth(),g.getDate(),hour,minute,0,0)
+    const d=new Date(g.getFullYear(),g.getMonth(),g.getDate(),dateOnly?0:hour,dateOnly?0:minute,0,0)
     onChange(d.toISOString()); setOpen(false)
   }
   function changeTime(h:number,m:number){
@@ -149,14 +149,14 @@ export default function PersianDateTimePicker({value,onChange}:Props){
 
   return <div className="jalali-picker">
     <button type="button" className="input picker-trigger" onClick={()=>setOpen(!open)}>
-      <CalendarDays size={17}/><span>{toPersianDigits(`${jy}/${pad(jm)}/${pad(jd)}`)}</span><span className="picker-time"><Clock3 size={15}/>{toPersianDigits(`${pad(hour)}:${pad(minute)}`)}</span>
+      <CalendarDays size={17}/><span>{value?toPersianDigits(`${jy}/${pad(jm)}/${pad(jd)}`):placeholder}</span>{!dateOnly&&<span className="picker-time"><Clock3 size={15}/>{toPersianDigits(`${pad(hour)}:${pad(minute)}`)}</span>}
     </button>
     {open&&<div className="jalali-popover">
       <div className="picker-head"><button type="button" className="icon-btn" onClick={prev}><ChevronRight size={18}/></button><b>{monthNames[viewM-1]} {toPersianDigits(String(viewY))}</b><button type="button" className="icon-btn" onClick={next}><ChevronLeft size={18}/></button></div>
       <div className="picker-week">{PERSIAN_WEEKDAYS.map((x,i)=><span key={i}>{x}</span>)}</div>
       <div className="picker-grid">{days.map((day,i)=>day===null?<span key={i}/>:<button type="button" key={i} className={day===jd&&viewM===jm&&viewY===jy?'selected-day':''} onClick={()=>selectDay(day)}>{toPersianDigits(String(day))}</button>)}</div>
-      <div className="picker-time-row"><Clock3 size={16}/><span>ساعت</span><select className="select" value={hour} onChange={e=>changeTime(+e.target.value,minute)}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{pad(i)}</option>)}</select><span>:</span><select className="select" value={minute} onChange={e=>changeTime(hour,+e.target.value)}>{Array.from({length:60},(_,i)=><option key={i} value={i}>{pad(i)}</option>)}</select></div>
-      <button type="button" className="btn secondary today-btn" onClick={()=>{const n=new Date();const j=toJalali(n);setJy(j.jy);setJm(j.jm);setJd(j.jd);setHour(n.getHours());setMinute(n.getMinutes());setViewY(j.jy);setViewM(j.jm);onChange(n.toISOString())}}>امروز و همین ساعت</button>
+      {!dateOnly&&<div className="picker-time-row"><Clock3 size={16}/><span>ساعت</span><select className="select" value={hour} onChange={e=>changeTime(+e.target.value,minute)}>{Array.from({length:24},(_,i)=><option key={i} value={i}>{pad(i)}</option>)}</select><span>:</span><select className="select" value={minute} onChange={e=>changeTime(hour,+e.target.value)}>{Array.from({length:60},(_,i)=><option key={i} value={i}>{pad(i)}</option>)}</select></div>}
+      <div className="row" style={{marginTop:8}}><button type="button" className="btn secondary today-btn" onClick={()=>{const n=new Date();const j=toJalali(n);setJy(j.jy);setJm(j.jm);setJd(j.jd);setHour(dateOnly?0:n.getHours());setMinute(dateOnly?0:n.getMinutes());setViewY(j.jy);setViewM(j.jm);onChange(new Date(n.getFullYear(),n.getMonth(),n.getDate(),dateOnly?0:n.getHours(),dateOnly?0:n.getMinutes(),0,0).toISOString())}}>{dateOnly?'امروز':'امروز و همین ساعت'}</button>{allowClear&&value&&<button type="button" className="btn secondary" onClick={()=>{onChange('');setOpen(false)}}>پاک کردن</button>}</div>
     </div>}
   </div>
 }

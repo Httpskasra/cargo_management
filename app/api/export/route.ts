@@ -7,8 +7,8 @@ function esc(v: unknown) {
 }
 function dateRange(from: string | null, to: string | null) {
   const x: any = {}
-  if (from) x.gte = new Date(`${from}T00:00:00`)
-  if (to) x.lte = new Date(`${to}T23:59:59.999`)
+  if (from) { const d = new Date(from); d.setHours(0,0,0,0); x.gte = d }
+  if (to) { const d = new Date(to); d.setHours(23,59,59,999); x.lte = d }
   return Object.keys(x).length ? x : undefined
 }
 function parseItemStatus(value: string | null): ItemStatus | undefined {

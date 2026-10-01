@@ -5,7 +5,8 @@ export async function GET(req:NextRequest){
  const p=req.nextUrl.searchParams,riderId=p.get('riderId'),q=(p.get('q')||'').trim(),where:any={}
  if(riderId)where.riderId=Number(riderId)
  if(q){const n=Number(q);const OR:any[]=[{rider:{name:{contains:q}}},{type:{equals:q.toUpperCase()}}];if(Number.isInteger(n)&&n>0)OR.push({id:n});where.OR=OR}
- return NextResponse.json(await prisma.runsheet.findMany({where,include:{rider:true,items:{orderBy:{registeredAt:'desc'}}},orderBy:{createdAt:'desc'}}))
+ const data=await prisma.runsheet.findMany({where,include:{rider:true,items:{orderBy:{registeredAt:'desc'}}},orderBy:{createdAt:'desc'},take:q?100:20})
+ return NextResponse.json(data.map(rs=>({...rs,completionStatus:rs.items.length>0&&rs.items.every(i=>i.status==='DELIVERED')?'COMPLETED':'ACTIVE'})))
 }
 export async function POST(req:NextRequest){
  const b=await req.json(),createdAt=b.createdAt?new Date(b.createdAt):new Date();if(Number.isNaN(createdAt.getTime()))return NextResponse.json({error:'تاریخ و ساعت واردشده معتبر نیست'},{status:400})

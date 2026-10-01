@@ -155,8 +155,8 @@ export default function Runsheets(){
      })
      const d=await r.json()
      if(!r.ok){setImportMsg({err:true,text:d.error||'خطا در ثبت گروهی'});return}
-     const conflictText=d.conflicts?.length?`، ${d.conflicts.length} مورد در رانشیت دیگر بود`:''
-     setImportMsg({err:false,text:`${d.created} بارکد ثبت شد${d.alreadyHere?`، ${d.alreadyHere} مورد از قبل در همین رانشیت بود`:''}${conflictText}`})
+     const conflictText=d.conflicts?.length?`، بارکدهای تکراری: ${d.conflicts.map((c:any)=>`${c.barcode} ← رانشیت #${c.runsheetId}${c.type?` (${c.type}${c.riderName?` - ${c.riderName}`:''})`:''}`).join(' | ')}`:''
+     setImportMsg({err:!!d.conflicts?.length,text:`${d.created} بارکد ثبت شد${d.alreadyHere?`، ${d.alreadyHere} مورد از قبل در همین رانشیت بود`:''}${conflictText}`})
      if(d.created) setPasteText('')
      await load()
    }catch{setImportMsg({err:true,text:'ارتباط با سرور برقرار نشد'})}
@@ -175,9 +175,9 @@ export default function Runsheets(){
 
    <div className="section-grid section">
      <div className="card">
-       <div className="row" style={{justifyContent:'space-between',marginBottom:12}}><h3 style={{margin:0}}>رانشیت‌ها</h3><span className="chip">{runs.length} مورد</span></div><div className="row responsive" style={{marginBottom:12}}><input className="input" style={{flex:1}} value={runsheetSearch} onChange={e=>{setRunsheetSearch(e.target.value);if(!e.target.value.trim())load('')}} onKeyDown={e=>e.key==='Enter'&&load()} placeholder="جستجو با شماره رانشیت، نام راکب یا نوع..."/><button className="btn secondary" onClick={()=>load()} disabled={!runsheetSearch.trim()}>جستجو</button></div>
+       <div className="row" style={{justifyContent:'space-between',marginBottom:12}}><h3 style={{margin:0}}>رانشیت‌ها</h3><span className="chip">{runsheetSearch.trim()?`${runs.length} نتیجه`:`۲۰ رانشیت آخر`}</span></div><div className="row responsive" style={{marginBottom:12}}><input className="input" style={{flex:1}} value={runsheetSearch} onChange={e=>{setRunsheetSearch(e.target.value);if(!e.target.value.trim())load('')}} onKeyDown={e=>e.key==='Enter'&&load()} placeholder="جستجو با شماره رانشیت، نام راکب یا نوع..."/><button className="btn secondary" onClick={()=>load()} disabled={!runsheetSearch.trim()}>جستجو</button></div>
        <div className="runs-list">{runs.map(r=><div key={r.id} onClick={()=>setSelected(r)} className={`runs-item ${selected?.id===r.id?'active':''}`}>
-         <div className="runs-item-top"><div className="row"><div className="nav-icon"><UserRound size={17}/></div><b>{r.rider.name}</b></div><span className="chip">{r.type}</span></div>
+         <div className="runs-item-top"><div className="row"><div className="nav-icon"><UserRound size={17}/></div><b>{r.rider.name}</b></div><div className="row"><span className="chip">{r.type}</span>{r.completionStatus==='COMPLETED'&&<span className="badge delivered"><CheckCircle2 size={12}/> اتمام — کامل تحویل شده</span>}</div></div>
          <div className="muted" style={{margin:'8px 0 5px'}}><Package size={13} style={{verticalAlign:'middle'}}/> {r.items.length} مرسوله — #{r.id}</div>
          <small className="muted"><CalendarClock size={12} style={{verticalAlign:'middle'}}/> {faDate(r.createdAt)}، {faTime(r.createdAt)}</small>
        </div>)}{!runs.length&&<div className="empty"><div className="empty-icon"><ClipboardList size={28}/></div><h3>هنوز رانشیتی ساخته نشده</h3><div>از فرم بالا اولین رانشیت را بسازید.</div></div>}</div>
@@ -187,7 +187,7 @@ export default function Runsheets(){
        <div className="card hero-card">
          <div className="row responsive" style={{justifyContent:'space-between',alignItems:'flex-start'}}>
            <div><div className="eyebrow">رانشیت انتخاب‌شده</div><h2>{selected.rider.name}</h2><div className="muted">{selected.type} #{selected.id} — ساخته شده {faDate(selected.createdAt)} ساعت {faTime(selected.createdAt)}</div></div>
-           <div className="row responsive nedex-hero-actions"><span className="badge">{selected.items.length} مرسوله</span>{selected.type==='NDX'&&<button className="btn big nedex-refresh" disabled={nedexBusy||!selected.items.length} onClick={updateNedexStatuses}><RefreshCw size={17} className={nedexBusy?'spin':''}/>{nedexBusy?'در حال بررسی بارکدها...':'بروزرسانی وضعیت'}</button>}</div>
+           <div className="row responsive nedex-hero-actions">{selected.completionStatus==='COMPLETED'&&<span className="badge delivered"><CheckCircle2 size={12}/> اتمام — کامل تحویل شده</span>}<span className="badge">{selected.items.length} مرسوله</span>{selected.type==='NDX'&&<button className="btn big nedex-refresh" disabled={nedexBusy||!selected.items.length} onClick={updateNedexStatuses}><RefreshCw size={17} className={nedexBusy?'spin':''}/>{nedexBusy?'در حال بررسی بارکدها...':'بروزرسانی وضعیت'}</button>}</div>
          </div>
          {selected.type==='NDX'&&nedexSummary&&<div className="nedex-summary"><span className="nedex-stat green">تحویل: <b>{nedexSummary.delivered}</b></span><span className="nedex-stat blue">درب منزل + کامنت: <b>{nedexSummary.withComment}</b></span><span className="nedex-stat red">درب منزل بدون کامنت: <b>{nedexSummary.withoutComment}</b></span><span className="nedex-stat neutral">سایر: <b>{nedexSummary.other}</b></span>{nedexSummary.errors>0&&<span className="nedex-stat error">خطا: <b>{nedexSummary.errors}</b></span>}</div>}
          {selected.type==='NDX'&&nedexError&&<div className="scan-status error">{nedexError}</div>}
